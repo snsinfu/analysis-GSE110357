@@ -1,0 +1,6 @@
+#!/bin/sh -eu
+
+file="$1"
+acc="$(echo "${file}" | egrep -o '^GS[EM][0-9]+')"
+
+echo "https://www.ncbi.nlm.nih.gov/geo/download/?acc=${acc}&format=file&file=${file}"

@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+"""
+Map gene ID in scRNA-seq CSV to corresponding gene name.
+"""
+
+import csv
+import gzip
+import signal
+import sys
+
+
+def main():
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+    rnaseq_filename, geneid_filename = sys.argv[1:]
+
+    gene_map = {}
+    for gene_id, gene_name in read_geneid(geneid_filename):
+        gene_map[gene_id] = gene_name
+
+    resolve(rnaseq_filename, gene_map)
+
+
+def resolve(filename, gene_map):
+    with meta_open(filename) as file:
+        reader = csv.reader(file)
+
+        # Print header. We map the first column (gene ID), so rename it.
+        names = next(reader)
+        names[0] = "gene"
+        print(",".join(names))
+
+        for row in reader:
+            gene_id = row[0]
+
+            # Gene ID can be postfixed by version number. Strip it off if any.
+            gene_id = gene_id.split(".", 1)[0]
+
+            if gene_id in gene_map:
+                row[0] = gene_map[gene_id]
+
+            print(",".join(row))
+
+
+def read_geneid(filename):
+    with meta_open(filename) as file:
+        reader = csv.reader(file)
+
+        names = next(reader)
+        index_id = names.index("gene_id")
+        index_name = names.index("gene_name")
+
+        for row in reader:
+            gene_id = row[index_id]
+            gene_name = row[index_name]
+            yield gene_id, gene_name
+
+
+def meta_open(filename):
+    if filename.endswith(".gz"):
+        return gzip.open(filename, "rt")
+    return open(filename, "r")
+
+
+if __name__ == "__main__":
+    main()

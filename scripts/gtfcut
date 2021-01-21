@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+"""
+Read GTF from stdin and write specified gene attributes to stdout in CSV format.
+"""
+
+import re
+import signal
+import sys
+
+
+RE_TAG = re.compile("[a-zA-Z0-9_]+")
+
+
+def main():
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+
+    queries = sys.argv[1:]
+    sep = ","
+
+    print(sep.join(queries))
+    for record in scan_genes(sys.stdin):
+        print(sep.join(record[key] for key in queries))
+
+
+def scan_genes(lines):
+    for line in lines:
+        line = line.strip()
+
+        if line.startswith("#"):
+            continue
+
+        _, _, feature, _, _, _, _, _, attr = line.split("\t", 8)
+
+        if feature != "gene":
+            continue
+
+        record, _ = parse_attr(attr)
+        yield record
+
+
+def parse_attr(attr):
+    record = {}
+
+    while attr:
+        tag, attr = parse_tag(attr)
+        attr = attr.lstrip()
+        value, attr = parse_value(attr)
+        attr = attr.lstrip()
+
+        record[tag] = value
+
+        assert attr.startswith(";")
+        attr = attr[1:].lstrip()
+
+    return record, attr
+
+
+def parse_tag(attr):
+    match = RE_TAG.match(attr)
+    start, end = match.span()
+
+    if start > 0:
+        return None, attr
+
+    return attr[:end], attr[end:]
+
+
+def parse_value(attr):
+    assert attr.startswith('"')
+    attr = attr[1:]
+    value, attr = attr.split('"', 1)
+    return value, attr
+
+
+if __name__ == "__main__":
+    main()
