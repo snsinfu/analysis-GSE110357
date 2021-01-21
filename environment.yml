@@ -1,0 +1,10 @@
+name: data-analysis-41e71f86
+
+dependencies:
+  - defaults::python=3
+  - defaults::jupyterlab=2
+  - defaults::matplotlib
+  - defaults::numpy
+  - defaults::pandas
+  - defaults::scikit-learn
+  - conda-forge::umap-learn
