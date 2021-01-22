@@ -1,1 +1,7 @@
+.*
+_*
+
+!.gitignore
+!.gitkeep
+
 /data
